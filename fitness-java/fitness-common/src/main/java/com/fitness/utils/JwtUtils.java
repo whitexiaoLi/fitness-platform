@@ -26,11 +26,11 @@ public class JwtUtils {
     public String generateAccessToken(Long userId, String role) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(String.valueOf(userId))
+                .subject(String.valueOf(userId))
                 .claim("role", role)
-                .setId(UUID.randomUUID().toString())
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + accessTokenExpire * 60 * 1000L))
+                .id(UUID.randomUUID().toString())
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + accessTokenExpire * 60 * 1000L))
                 .signWith(getKey())
                 .compact();
     }
@@ -38,20 +38,20 @@ public class JwtUtils {
     public String generateRefreshToken(Long userId) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(String.valueOf(userId))
-                .setId(UUID.randomUUID().toString())
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + refreshTokenExpire * 24 * 60 * 60 * 1000L))
+                .subject(String.valueOf(userId))
+                .id(UUID.randomUUID().toString())
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + refreshTokenExpire * 24 * 60 * 60 * 1000L))
                 .signWith(getKey())
                 .compact();
     }
 
     public Claims parseToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getKey())
+        return Jwts.parser()
+                .verifyWith(getKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public String getUserId(String token) {
