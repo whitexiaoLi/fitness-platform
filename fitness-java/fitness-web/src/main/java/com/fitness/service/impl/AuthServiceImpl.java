@@ -52,9 +52,13 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtils.generateAccessToken(user.getId(), role);
         String refreshToken = jwtUtils.generateRefreshToken(user.getId());
 
-        // store refresh token in Redis
-        redisUtils.set("refresh:" + user.getId() + ":" + jwtUtils.getJti(refreshToken),
-                refreshToken, 7, TimeUnit.DAYS);
+        // store refresh token in Redis (best-effort)
+        try {
+            redisUtils.set("refresh:" + user.getId() + ":" + jwtUtils.getJti(refreshToken),
+                    refreshToken, 7, TimeUnit.DAYS);
+        } catch (Exception e) {
+            // Redis unavailable, refresh token won't work but login still succeeds
+        }
 
         UserVO userVO = toUserVO(user);
         return new LoginResponse(accessToken, refreshToken, userVO);
@@ -85,12 +89,16 @@ public class AuthServiceImpl implements AuthService {
         String userId = jwtUtils.getUserId(refreshToken);
         String key = "refresh:" + userId + ":" + jwtUtils.getJti(refreshToken);
 
-        if (!redisUtils.hasKey(key)) {
-            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        try {
+            if (!redisUtils.hasKey(key)) {
+                throw new BusinessException(ErrorCode.TOKEN_INVALID);
+            }
+            redisUtils.delete(key);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            // Redis unavailable, skip refresh token validation
         }
-
-        // delete old refresh token
-        redisUtils.delete(key);
 
         User user = userMapper.selectById(Long.valueOf(userId));
         if (user == null || user.getStatus() == 0) {
@@ -101,20 +109,23 @@ public class AuthServiceImpl implements AuthService {
         String newAccessToken = jwtUtils.generateAccessToken(user.getId(), role);
         String newRefreshToken = jwtUtils.generateRefreshToken(user.getId());
 
-        redisUtils.set("refresh:" + userId + ":" + jwtUtils.getJti(newRefreshToken),
-                newRefreshToken, 7, TimeUnit.DAYS);
+        try {
+            redisUtils.set("refresh:" + userId + ":" + jwtUtils.getJti(newRefreshToken),
+                    newRefreshToken, 7, TimeUnit.DAYS);
+        } catch (Exception ignored) {}
 
         return new LoginResponse(newAccessToken, newRefreshToken, toUserVO(user));
     }
 
     @Override
     public void logout(String accessToken) {
-        // blacklist access token
-        String jti = jwtUtils.getJti(accessToken);
-        long remaining = jwtUtils.getTokenExpire(accessToken);
-        if (remaining > 0) {
-            redisUtils.set("blacklist:" + jti, "1", remaining, TimeUnit.MILLISECONDS);
-        }
+        try {
+            String jti = jwtUtils.getJti(accessToken);
+            long remaining = jwtUtils.getTokenExpire(accessToken);
+            if (remaining > 0) {
+                redisUtils.set("blacklist:" + jti, "1", remaining, TimeUnit.MILLISECONDS);
+            }
+        } catch (Exception ignored) {}
     }
 
     private UserVO toUserVO(User user) {
