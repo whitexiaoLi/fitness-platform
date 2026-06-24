@@ -24,4 +24,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         return new SecurityUser(user);
     }
+
+    public UserDetails loadUserById(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new UsernameNotFoundException("用户不存在: " + userId);
+        }
+        return new SecurityUser(user);
+    }
 }
