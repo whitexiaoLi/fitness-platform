@@ -39,4 +39,10 @@ public class AdminUserController {
         adminUserService.updateUserStatus(id, body.get("status"));
         return ApiResponse.success();
     }
+
+    @PutMapping("/{id}/role")
+    public ApiResponse<Void> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        adminUserService.updateUserRole(id, body.get("role"));
+        return ApiResponse.success();
+    }
 }

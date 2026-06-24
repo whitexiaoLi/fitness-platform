@@ -8,4 +8,5 @@ public interface AdminUserService {
     Page<UserVO> listUsers(int page, int size, String role, Integer status);
     UserVO getUserDetail(Long id);
     void updateUserStatus(Long id, Integer status);
+    void updateUserRole(Long id, String role);
 }

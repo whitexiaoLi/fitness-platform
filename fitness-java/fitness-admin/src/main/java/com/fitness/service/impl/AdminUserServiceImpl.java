@@ -49,6 +49,14 @@ public class AdminUserServiceImpl implements AdminUserService {
         userMapper.updateById(user);
     }
 
+    @Override
+    public void updateUserRole(Long id, String role) {
+        User user = userMapper.selectById(id);
+        if (user == null) throw new BusinessException(ErrorCode.NOT_FOUND);
+        user.setRole(UserRole.valueOf(role));
+        userMapper.updateById(user);
+    }
+
     private UserVO toVO(User user) {
         UserVO vo = new UserVO();
         vo.setId(user.getId());
