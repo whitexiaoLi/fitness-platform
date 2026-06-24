@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useUserStore } from '@/stores/user'
 
 const request = axios.create({
   baseURL: 'http://localhost:8080/api',
@@ -7,9 +6,9 @@ const request = axios.create({
 })
 
 request.interceptors.request.use((config) => {
-  const userStore = useUserStore()
-  if (userStore.accessToken) {
-    config.headers.Authorization = `Bearer ${userStore.accessToken}`
+  const token = localStorage.getItem('accessToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -18,22 +17,26 @@ request.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     if (error.response?.status === 401) {
-      const userStore = useUserStore()
-      if (userStore.refreshToken) {
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (refreshToken) {
         try {
           const res = await axios.post('http://localhost:8080/api/auth/refresh', {}, {
-            headers: { Authorization: `Bearer ${userStore.refreshToken}` },
+            headers: { Authorization: `Bearer ${refreshToken}` },
           })
           if (res.data?.code === 200) {
-            userStore.setTokens(res.data.data.accessToken, res.data.data.refreshToken)
-            error.config.headers.Authorization = `Bearer ${res.data.data.accessToken}`
+            const { accessToken, refreshToken: newRefresh } = res.data.data
+            localStorage.setItem('accessToken', accessToken)
+            localStorage.setItem('refreshToken', newRefresh)
+            error.config.headers.Authorization = `Bearer ${accessToken}`
             return request(error.config)
           }
         } catch (e) {
           // refresh failed
         }
       }
-      userStore.logout()
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
       window.location.href = '/login'
     }
     return Promise.reject(error)

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { login, register } from '@/api/auth'
+import request from '@/utils/request'
 
 export const useUserStore = defineStore('user', () => {
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
@@ -15,7 +15,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function doLogin(username, password) {
-    const res = await login(username, password)
+    const res = await request.post('/auth/login', { username, password })
     if (res.code === 200) {
       user.value = res.data.user
       setTokens(res.data.accessToken, res.data.refreshToken)
@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function doRegister(data) {
-    return await register(data)
+    return await request.post('/auth/register', data)
   }
 
   function logout() {

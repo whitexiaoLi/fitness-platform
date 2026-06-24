@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useAdminStore } from '@/stores/admin'
 
 const request = axios.create({
   baseURL: 'http://localhost:8080/api/admin',
@@ -7,8 +6,10 @@ const request = axios.create({
 })
 
 request.interceptors.request.use((config) => {
-  const store = useAdminStore()
-  if (store.token) config.headers.Authorization = `Bearer ${store.token}`
+  const token = localStorage.getItem('admin_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
@@ -16,7 +17,9 @@ request.interceptors.response.use(
   (r) => r.data,
   (error) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
-      useAdminStore().logout()
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      window.location.href = '/login'
     }
     return Promise.reject(error)
   },
