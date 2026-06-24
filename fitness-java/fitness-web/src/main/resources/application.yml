@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/fitness?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/fitness_ai}
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-min-32-chars-long}
+  access-token-expire: 30  # minutes
+  refresh-token-expire: 7   # days
+
+langchain4j:
+  openai:
+    chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${DEEPSEEK_API_KEY:sk-your-key}
+      model-name: deepseek-chat
+    embedding-model:
+      base-url: https://api.deepseek.com
+      api-key: ${DEEPSEEK_API_KEY:sk-your-key}
+      model-name: deepseek-embedding
+
+pinecone:
+  api-key: ${PINECONE_API_KEY:your-pinecone-key}
+  host: ${PINECONE_HOST:https://your-index.pinecone.io}
+  index-name: ${PINECONE_INDEX:fitness-knowledge}
