@@ -58,6 +58,12 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
+        <!-- Spring Security (for SecurityUser, filters) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- Spring Web (for HttpStatus, RestControllerAdvice) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
