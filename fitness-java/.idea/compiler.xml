@@ -15,8 +15,8 @@
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
         </processorPath>
-        <module name="fitness-ai" />
         <module name="fitness-web" />
+        <module name="fitness-ai" />
         <module name="fitness-common" />
         <module name="fitness-admin" />
       </profile>
