@@ -23,15 +23,27 @@ public class AdminUserController {
     public ApiResponse<PageResult<UserVO>> listUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Integer status) {
-        Page<UserVO> result = adminUserService.listUsers(page, size, role, status);
+        Page<UserVO> result = adminUserService.listUsers(page, size, keyword, role, status);
         return ApiResponse.success(PageResult.of(result.getTotal(), page, size, result.getRecords()));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<UserVO> getUserDetail(@PathVariable Long id) {
         return ApiResponse.success(adminUserService.getUserDetail(id));
+    }
+
+    @PostMapping
+    public ApiResponse<UserVO> createUser(@RequestBody Map<String, String> body) {
+        UserVO vo = adminUserService.createUser(
+                body.get("username"),
+                body.get("password"),
+                body.get("nickname"),
+                body.get("role"),
+                body.get("phone"));
+        return ApiResponse.success(vo);
     }
 
     @PutMapping("/{id}/status")

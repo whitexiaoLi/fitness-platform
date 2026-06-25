@@ -1,44 +1,94 @@
 <template>
   <div class="user-manage">
-    <el-card>
-      <template #header><h3>用户管理</h3></template>
-      <el-table :data="users" stripe v-loading="loading">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" width="150" />
-        <el-table-column prop="nickname" label="昵称" width="150" />
-        <el-table-column prop="phone" label="手机号" width="150" />
-        <el-table-column label="角色" width="180">
+    <!-- Search & Filter Toolbar -->
+    <el-card class="filter-card" shadow="never">
+      <el-form :inline="true" :model="filters" size="default">
+        <el-form-item label="搜索">
+          <el-input
+            v-model="filters.keyword"
+            placeholder="用户名 / 昵称 / 手机号"
+            clearable
+            style="width: 240px"
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="filters.role" placeholder="全部" clearable style="width: 130px">
+            <el-option label="普通用户" value="USER" />
+            <el-option label="教练" value="COACH" />
+            <el-option label="管理员" value="ADMIN" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="filters.status" placeholder="全部" clearable style="width: 120px">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- Table -->
+    <el-card style="margin-top: 16px">
+      <el-table :data="users" stripe v-loading="loading" size="default">
+        <el-table-column label="用户" min-width="200">
           <template #default="{ row }">
-            <el-select
-              v-model="row.role"
-              size="small"
-              @change="(val) => handleRoleChange(row, val)"
-            >
-              <el-option label="普通用户" value="USER" />
-              <el-option label="教练" value="COACH" />
-              <el-option label="管理员" value="ADMIN" />
-            </el-select>
+            <div class="user-cell">
+              <el-avatar :size="36" :src="row.avatarUrl" icon="UserFilled" />
+              <div class="user-info">
+                <span class="user-name">{{ row.nickname }}</span>
+                <span class="user-account">@{{ row.username }}</span>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column label="角色" width="150">
+          <template #default="{ row }">
+            <el-popconfirm
+              :title="`确认将 ${row.username} 的角色改为 ${nextRoleLabel(row.role)} 吗？`"
+              @confirm="handleRoleChange(row, nextRole(row.role))"
+            >
+              <template #reference>
+                <el-tag
+                  :type="roleTag(row.role)"
+                  class="role-tag"
+                >
+                  {{ roleLabel(row.role) }}
+                  <el-icon style="margin-left: 2px"><Switch /></el-icon>
+                </el-tag>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-switch
-              v-model="row.status"
-              :active-value="1"
-              :inactive-value="0"
-              @change="() => handleStatusChange(row)"
+              :model-value="row.status === 1"
+              @change="(val) => handleStatusChange(row, val ? 1 : 0)"
             />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="注册时间" min-width="180" />
+        <el-table-column label="注册时间" min-width="170">
+          <template #default="{ row }">
+            {{ formatTime(row.createTime) }}
+          </template>
+        </el-table-column>
       </el-table>
-      <div class="pagination">
+
+      <div class="pagination-wrap">
         <el-pagination
           v-model:current-page="page"
-          :page-size="size"
+          v-model:page-size="size"
+          :page-sizes="[10, 20, 50]"
           :total="total"
-          layout="total, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
           @current-change="fetchUsers"
+          @size-change="fetchUsers"
         />
       </div>
     </el-card>
@@ -46,9 +96,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import { Switch } from '@element-plus/icons-vue'
 
 const users = ref([])
 const loading = ref(false)
@@ -56,12 +107,34 @@ const page = ref(1)
 const size = ref(10)
 const total = ref(0)
 
+const filters = reactive({
+  keyword: '',
+  role: '',
+  status: '',
+})
+
+const roleMap = { USER: '普通用户', COACH: '教练', ADMIN: '管理员' }
+const roleTag = (role) => ({ ADMIN: 'danger', COACH: 'warning', USER: 'info' }[role] || 'info')
+const roleLabel = (role) => roleMap[role] || role
+const roleCycle = { USER: 'COACH', COACH: 'ADMIN', ADMIN: 'USER' }
+const nextRole = (role) => roleCycle[role] || 'USER'
+const nextRoleLabel = (role) => roleMap[roleCycle[role]] || '用户'
+
+function formatTime(t) {
+  if (!t) return '-'
+  return t.replace('T', ' ')
+}
+
 onMounted(() => fetchUsers())
 
 async function fetchUsers() {
   loading.value = true
   try {
-    const res = await request.get('/users', { params: { page: page.value, size: size.value } })
+    const params = { page: page.value, size: size.value }
+    if (filters.keyword) params.keyword = filters.keyword
+    if (filters.role) params.role = filters.role
+    if (filters.status !== '' && filters.status !== null) params.status = filters.status
+    const res = await request.get('/users', { params })
     if (res.code === 200) {
       users.value = res.data.records
       total.value = res.data.total
@@ -73,28 +146,50 @@ async function fetchUsers() {
   }
 }
 
+function handleSearch() {
+  page.value = 1
+  fetchUsers()
+}
+
+function handleReset() {
+  filters.keyword = ''
+  filters.role = ''
+  filters.status = ''
+  page.value = 1
+  fetchUsers()
+}
+
 async function handleRoleChange(row, newRole) {
   try {
     await request.put(`/users/${row.id}/role`, { role: newRole })
-    ElMessage.success(`${row.username} 角色已更新为 ${newRole}`)
+    ElMessage.success(`${row.username} 角色已更新为 ${roleLabel(newRole)}`)
+    fetchUsers()
   } catch (e) {
     ElMessage.error('更新失败')
-    fetchUsers()
   }
 }
 
-async function handleStatusChange(row) {
+async function handleStatusChange(row, newStatus) {
   try {
-    await request.put(`/users/${row.id}/status`, { status: row.status })
-    ElMessage.success(`${row.username} ${row.status === 1 ? '已启用' : '已禁用'}`)
+    await request.put(`/users/${row.id}/status`, { status: newStatus })
+    ElMessage.success(`${row.username} ${newStatus === 1 ? '已启用' : '已禁用'}`)
+    fetchUsers()
   } catch (e) {
     ElMessage.error('更新失败')
-    fetchUsers()
   }
 }
 </script>
 
 <style scoped>
-.user-manage { padding: 20px; }
-.pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
+.filter-card :deep(.el-card__body) { padding: 16px 20px 0; }
+
+.user-cell { display: flex; align-items: center; gap: 12px; }
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 14px; }
+.user-account { font-size: 12px; color: #999; }
+
+.role-tag { cursor: pointer; }
+.role-tag:hover { opacity: 0.8; }
+
+.pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
 </style>

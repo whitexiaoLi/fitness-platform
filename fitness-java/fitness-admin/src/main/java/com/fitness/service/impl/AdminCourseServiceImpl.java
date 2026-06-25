@@ -18,11 +18,13 @@ public class AdminCourseServiceImpl implements AdminCourseService {
     private CourseMapper courseMapper;
 
     @Override
-    public Page<Course> listPendingCourses(int page, int size) {
-        return courseMapper.selectPage(new Page<>(page, size),
-                new LambdaQueryWrapper<Course>()
-                        .eq(Course::getStatus, CourseStatus.PENDING)
-                        .orderByAsc(Course::getCreateTime));
+    public Page<Course> listCourses(int page, int size, String status) {
+        LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Course::getStatus, CourseStatus.valueOf(status));
+        }
+        wrapper.orderByAsc(Course::getCreateTime);
+        return courseMapper.selectPage(new Page<>(page, size), wrapper);
     }
 
     @Override

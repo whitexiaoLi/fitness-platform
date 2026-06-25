@@ -13,4 +13,11 @@ public class UserVO {
     private String role;
     private Integer status;
     private LocalDateTime createTime;
+
+    // Coach-specific
+    private String bio;
+    private String certifications;
+    private String specialties;
+    private Integer experience;
+    private java.math.BigDecimal hourlyRate;
 }

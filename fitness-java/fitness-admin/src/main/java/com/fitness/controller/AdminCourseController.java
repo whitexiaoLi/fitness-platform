@@ -20,10 +20,11 @@ public class AdminCourseController {
     private AdminCourseService adminCourseService;
 
     @GetMapping
-    public ApiResponse<PageResult<Course>> listPendingCourses(
+    public ApiResponse<PageResult<Course>> listCourses(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<Course> result = adminCourseService.listPendingCourses(page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status) {
+        Page<Course> result = adminCourseService.listCourses(page, size, status);
         return ApiResponse.success(PageResult.of(result.getTotal(), page, size, result.getRecords()));
     }
 

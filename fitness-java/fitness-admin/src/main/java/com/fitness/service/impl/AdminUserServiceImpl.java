@@ -10,8 +10,12 @@ import com.fitness.exception.ErrorCode;
 import com.fitness.mapper.UserMapper;
 import com.fitness.service.AdminUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
@@ -19,11 +23,22 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
-    public Page<UserVO> listUsers(int page, int size, String role, Integer status) {
+    public Page<UserVO> listUsers(int page, int size, String keyword, String role, Integer status) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w
+                    .like(User::getUsername, keyword)
+                    .or().like(User::getNickname, keyword)
+                    .or().like(User::getPhone, keyword));
+        }
         if (StringUtils.hasText(role)) {
-            wrapper.eq(User::getRole, UserRole.valueOf(role));
+            List<UserRole> roles = Arrays.stream(role.split(","))
+                    .map(UserRole::valueOf).toList();
+            wrapper.in(User::getRole, roles);
         }
         if (status != null) {
             wrapper.eq(User::getStatus, status);
@@ -38,6 +53,21 @@ public class AdminUserServiceImpl implements AdminUserService {
     public UserVO getUserDetail(Long id) {
         User user = userMapper.selectById(id);
         if (user == null) throw new BusinessException(ErrorCode.NOT_FOUND);
+        return toVO(user);
+    }
+
+    @Override
+    public UserVO createUser(String username, String password, String nickname, String role, String phone) {
+        User exist = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+        if (exist != null) throw new BusinessException(ErrorCode.USERNAME_EXISTS);
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setNickname(nickname);
+        user.setRole(UserRole.valueOf(role));
+        user.setPhone(phone);
+        user.setStatus(1);
+        userMapper.insert(user);
         return toVO(user);
     }
 
@@ -67,6 +97,11 @@ public class AdminUserServiceImpl implements AdminUserService {
         vo.setRole(user.getRole() != null ? user.getRole().getValue() : null);
         vo.setStatus(user.getStatus());
         vo.setCreateTime(user.getCreateTime());
+        vo.setBio(user.getBio());
+        vo.setCertifications(user.getCertifications());
+        vo.setSpecialties(user.getSpecialties());
+        vo.setExperience(user.getExperience());
+        vo.setHourlyRate(user.getHourlyRate());
         return vo;
     }
 }

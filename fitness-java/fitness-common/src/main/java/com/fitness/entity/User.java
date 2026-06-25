@@ -16,4 +16,11 @@ public class User extends BaseEntity {
     private String phone;
     private UserRole role;
     private Integer status;
+
+    // Coach-specific fields
+    private String bio;
+    private String certifications;
+    private String specialties;
+    private Integer experience;
+    private java.math.BigDecimal hourlyRate;
 }
