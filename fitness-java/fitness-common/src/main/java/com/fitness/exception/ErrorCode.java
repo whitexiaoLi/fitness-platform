@@ -29,7 +29,11 @@ public enum ErrorCode {
 
     // AI 相关 4xxx
     AI_SERVICE_ERROR(4001, "AI 服务异常"),
-    AI_RATE_LIMIT(4002, "AI 请求过于频繁");
+    AI_RATE_LIMIT(4002, "AI 请求过于频繁"),
+
+    // 饮食相关 5xxx
+    DIET_RECORD_NOT_FOUND(5001, "饮食记录不存在"),
+    DIET_RECORD_NOT_OWNER(5002, "无权操作该饮食记录");
 
     private final int code;
     private final String message;

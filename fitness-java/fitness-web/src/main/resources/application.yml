@@ -47,3 +47,6 @@ pinecone:
   api-key: ${PINECONE_API_KEY}
   host: ${PINECONE_FITNESS_HOST}
   index-name: ${PINECONE_INDEX:fitness-knowledge}
+
+usda:
+  api-key: ${USDA_API_KEY:}

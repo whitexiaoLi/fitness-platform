@@ -45,13 +45,30 @@ CREATE TABLE IF NOT EXISTS `course` (
     `category`    VARCHAR(50)  NOT NULL,
     `difficulty`  VARCHAR(20)  NOT NULL DEFAULT 'BEGINNER',
     `duration`    INT          COMMENT 'minutes',
-    `price`       DECIMAL(10,2) DEFAULT 0,
-    `status`      VARCHAR(20)  NOT NULL DEFAULT 'DRAFT',
-    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `price`        DECIMAL(10,2) DEFAULT 0,
+    `status`       VARCHAR(20)  NOT NULL DEFAULT 'DRAFT',
+    `rating`       DECIMAL(2,1) DEFAULT 0,
+    `rating_count` INT          DEFAULT 0,
+    `create_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_coach (`coach_id`),
     INDEX idx_category (`category`),
     INDEX idx_status (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Course exercises (videos + text per course)
+-- ============================================
+CREATE TABLE IF NOT EXISTS `course_exercise` (
+    `id`          BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `course_id`   BIGINT       NOT NULL,
+    `title`       VARCHAR(200) NOT NULL,
+    `video_url`   VARCHAR(500),
+    `description` TEXT,
+    `sort_order`  INT          DEFAULT 0,
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_course (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -90,7 +107,9 @@ CREATE TABLE IF NOT EXISTS `training_record` (
 CREATE TABLE IF NOT EXISTS `diet_record` (
     `id`          BIGINT       AUTO_INCREMENT PRIMARY KEY,
     `user_id`     BIGINT       NOT NULL,
-    `meal_type`   VARCHAR(20)  NOT NULL,
+    `meal_type`   VARCHAR(50)  NOT NULL,
+    `food_id`     BIGINT       COMMENT 'FK to food_item, null=manual entry',
+    `weight_grams` DECIMAL(7,1) COMMENT 'actual weight eaten in grams',
     `food_name`   VARCHAR(100) NOT NULL,
     `calories`    INT,
     `protein`     DECIMAL(5,1) DEFAULT 0,
@@ -260,6 +279,7 @@ INSERT IGNORE INTO `sys_role` (`code`, `name`, `description`) VALUES
 ('USER',  'User',        'Basic user access');
 
 -- ============================================
+-- ============================================
 -- Seed data: default permissions
 -- ============================================
 INSERT IGNORE INTO `sys_permission` (`code`, `name`, `group_name`, `description`) VALUES
@@ -273,3 +293,50 @@ INSERT IGNORE INTO `sys_permission` (`code`, `name`, `group_name`, `description`
 ('coach:edit',    'Edit Coaches',   'Coach Management',   'Edit coach info and profiles'),
 ('settings:view', 'View Settings',  'System Settings',    'View system settings'),
 ('settings:edit', 'Edit Settings',  'System Settings',    'Modify system settings and permissions');
+
+-- ============================================
+-- Food item database (USDA cache + local presets)
+-- ============================================
+CREATE TABLE IF NOT EXISTS `food_item` (
+    `id`          BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `fdc_id`      INT          COMMENT 'USDA FDC ID (null for local/custom)',
+    `name`        VARCHAR(200) NOT NULL,
+    `name_en`     VARCHAR(200) COMMENT 'English name for USDA search',
+    `category`    VARCHAR(50)  COMMENT '主食/肉类/蔬菜/水果/乳制品/蛋类/豆制品/零食/饮品/调料',
+    `calories`    DECIMAL(7,2) COMMENT 'kcal per 100g',
+    `protein`     DECIMAL(5,2) COMMENT 'g per 100g',
+    `carbs`       DECIMAL(5,2) COMMENT 'g per 100g',
+    `fat`         DECIMAL(5,2) COMMENT 'g per 100g',
+    `source`      VARCHAR(20)  DEFAULT 'PRESET' COMMENT 'USDA/PRESET/CUSTOM',
+    `is_common`   TINYINT      DEFAULT 0 COMMENT '1=common food, shown first',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE INDEX idx_fdc_id (`fdc_id`),
+    INDEX idx_name (`name`),
+    INDEX idx_category (`category`),
+    INDEX idx_source (`source`),
+    INDEX idx_is_common (`is_common`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- User custom meal types
+-- ============================================
+CREATE TABLE IF NOT EXISTS `user_meal_type` (
+    `id`          BIGINT      AUTO_INCREMENT PRIMARY KEY,
+    `user_id`     BIGINT      NOT NULL,
+    `name`        VARCHAR(50) NOT NULL,
+    `code`        VARCHAR(50) NOT NULL COMMENT 'MEAL_1, MEAL_2, etc.',
+    `sort_order`  INT         DEFAULT 0,
+    `is_active`   TINYINT     DEFAULT 1 COMMENT '0=disabled, 1=enabled',
+    `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE INDEX uq_user_code (`user_id`, `code`),
+    INDEX idx_user (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Diet record extensions (run if table already exists)
+-- ============================================
+-- ALTER TABLE `diet_record`
+--   ADD COLUMN `food_id`      BIGINT       COMMENT 'FK to food_item, null=manual entry',
+--   ADD COLUMN `weight_grams` DECIMAL(7,1) COMMENT 'actual weight eaten in grams';

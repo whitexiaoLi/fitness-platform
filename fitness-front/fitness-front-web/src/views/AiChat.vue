@@ -1,36 +1,31 @@
 <template>
   <div class="ai-chat">
-    <el-container>
-      <el-header class="nav">
-        <span class="logo" @click="$router.push('/')">🏋️ Fitness</span>
-        <h3 style="margin:0">🤖 AI 健身教练</h3>
-        <el-button text @click="$router.push('/')">返回</el-button>
-      </el-header>
-      <el-main class="chat-main">
-        <div class="messages" ref="msgContainer">
-          <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
-            <div class="msg-content" v-html="formatMsg(msg.content)"></div>
-          </div>
-          <div v-if="streaming" class="msg assistant">
-            <div class="msg-content" v-html="formatMsg(streamText)"></div>
-            <span class="cursor">|</span>
-          </div>
-        </div>
-      </el-main>
-      <el-footer class="input-area">
-        <el-input
-          v-model="input"
-          placeholder="向 AI 教练提问...（例如：帮我制定一个减脂计划）"
-          size="large"
-          @keyup.enter="sendMessage"
-          :disabled="streaming"
-        >
-          <template #append>
-            <el-button :icon="'Promotion'" @click="sendMessage" :loading="streaming">发送</el-button>
-          </template>
-        </el-input>
-      </el-footer>
-    </el-container>
+    <div class="chat-header">
+      <h3>🤖 AI 健身教练</h3>
+      <span class="subtitle">随时为你提供健身建议</span>
+    </div>
+    <div class="messages" ref="msgContainer">
+      <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
+        <div class="msg-content" v-html="formatMsg(msg.content)"></div>
+      </div>
+      <div v-if="streaming" class="msg assistant">
+        <div class="msg-content" v-html="formatMsg(streamText)"></div>
+        <span class="cursor">|</span>
+      </div>
+    </div>
+    <div class="input-area">
+      <el-input
+        v-model="input"
+        placeholder="向 AI 教练提问...（例如：帮我制定一个减脂计划）"
+        size="large"
+        @keyup.enter="sendMessage"
+        :disabled="streaming"
+      >
+        <template #append>
+          <el-button @click="sendMessage" :loading="streaming">发送</el-button>
+        </template>
+      </el-input>
+    </div>
   </div>
 </template>
 
@@ -57,9 +52,7 @@ function sendMessage() {
   chatWithAi(msg, 'default',
     (token) => { streamText.value += token; scrollToBottom() },
     () => {
-      if (streamText.value) {
-        messages.value.push({ role: 'assistant', content: streamText.value })
-      }
+      if (streamText.value) messages.value.push({ role: 'assistant', content: streamText.value })
       streamText.value = ''
       streaming.value = false
       scrollToBottom()
@@ -76,23 +69,53 @@ function formatMsg(text) {
 }
 
 function scrollToBottom() {
-  nextTick(() => {
-    if (msgContainer.value) msgContainer.value.scrollTop = msgContainer.value.scrollHeight
-  })
+  nextTick(() => { if (msgContainer.value) msgContainer.value.scrollTop = msgContainer.value.scrollHeight })
 }
 </script>
 
 <style scoped>
-.nav { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding: 0 20px; background: white; }
-.logo { font-size: 20px; font-weight: bold; cursor: pointer; }
-.chat-main { flex: 1; overflow-y: auto; padding: 20px; background: #f5f5f5; }
-.messages { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.ai-chat { display: flex; flex-direction: column; height: calc(100vh - 104px); }
+.chat-header {
+  text-align: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.chat-header h3 { margin: 0; font-size: 18px; }
+.subtitle { font-size: 12px; color: #999; }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .msg { display: flex; }
 .msg.user { justify-content: flex-end; }
-.msg.user .msg-content { background: #667eea; color: white; border-radius: 16px 16px 4px 16px; }
-.msg.assistant .msg-content { background: white; border-radius: 16px 16px 16px 4px; }
-.msg-content { max-width: 70%; padding: 12px 16px; line-height: 1.6; }
-.cursor { animation: blink 1s infinite; }
+.msg.user .msg-content {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border-radius: 16px 16px 4px 16px;
+}
+.msg.assistant .msg-content {
+  background: #f0f2f5;
+  border-radius: 16px 16px 16px 4px;
+}
+.msg-content { max-width: 70%; padding: 12px 16px; line-height: 1.6; font-size: 14px; }
+.cursor { animation: blink 1s infinite; color: #667eea; }
 @keyframes blink { 50% { opacity: 0; } }
-.input-area { padding: 16px; background: white; border-top: 1px solid #eee; max-width: 800px; margin: 0 auto; }
+
+.input-area {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+}
 </style>

@@ -8,5 +8,6 @@ import java.util.Map;
 public interface DietService {
     DietRecord addRecord(Long userId, DietRecord record);
     Map<String, Object> listByDate(Long userId, LocalDate date);
-    void deleteRecord(Long id);
+    DietRecord updateRecord(Long id, Long userId, DietRecord record);
+    void deleteRecord(Long id, Long userId);
 }

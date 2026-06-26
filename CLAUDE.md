@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run
 
 ```bash
-# Backend (single app, port 8080)
+# Backend (single app, port 8080) — use IntelliJ bundled Maven if JAVA_HOME is misconfigured
 cd fitness-java
-mvn compile                              # compile all modules
+mvn compile                              # or: ./mvnw.cmd compile
 mvn spring-boot:run -pl fitness-web      # start server
 
 # Frontend — user web client (port 5173)
@@ -19,7 +19,7 @@ cd fitness-front/fitness-front-admin
 npm install && npm run dev
 ```
 
-Maven wrapper at `fitness-java/mvnw.cmd` (Windows) — no global Maven needed.
+Maven wrapper at `fitness-java/mvnw.cmd` (Windows). If JAVA_HOME points to wrong JDK, use IntelliJ bundled Maven: `"G:/Java/IntelliJ IDEA 2026.1/plugins/maven/lib/maven3/bin/mvn"`.
 
 ## Prerequisites
 
@@ -27,19 +27,19 @@ Maven wrapper at `fitness-java/mvnw.cmd` (Windows) — no global Maven needed.
 - MySQL 8.0 — run `fitness-java/docs/schema.sql` to create tables
 - Redis (optional — login works without it; refresh token persistence degraded)
 - MongoDB 6+ (for AI chat history)
-- Env vars: `DB_PASSWORD`, `JWT_SECRET_FITNESS`, `REDIS_PASSWORD`, `MONGODB_FITNESS_URI`, `DEEPSEEK_API_KEY`, `EMBEDDING_API_KEY`, `PINECONE_API_KEY`, `PINECONE_FITNESS_HOST`
+- Env vars: `DB_PASSWORD`, `JWT_SECRET_FITNESS`, `REDIS_PASSWORD`, `MONGODB_FITNESS_URI`, `DEEPSEEK_API_KEY`, `EMBEDDING_API_KEY`, `PINECONE_API_KEY`, `PINECONE_FITNESS_HOST`, `USDA_API_KEY` (optional — food search works with local DB only)
 
 ## Architecture
 
 **Monolith with library modules.** `fitness-web` is the sole Spring Boot entry point. It depends on `fitness-common`, `fitness-admin`, and `fitness-ai` — all three are library JARs auto-discovered by Spring component scan from `com.fitness`. Single port (8080).
 
 ```
-fitness-common   — 55 Java files: entities (16), enums (6), DTOs, Mapper interfaces (15),
+fitness-common   — 61 files: entities (19), enums (6), DTOs, Mapper interfaces (18),
                     config, utils, exception/ErrorCode, SecurityUser
-fitness-web      — 25 Java files: FitnessWebApplication + user/coach controllers + auth
-                    (JwtAuthFilter, WebSecurityConfig, AuthServiceImpl)
-fitness-admin    — 39 Java files: admin controllers (13) + services (no main class)
-fitness-ai       — 13 Java files: LangChain4j chat, RAG, 5 Function Calling tools
+fitness-web      — 32 files: FitnessWebApplication + user/coach controllers (9) + auth
+                    (JwtAuthFilter, WebSecurityConfig) + UsdaClient
+fitness-admin    — 39 files: admin controllers (13) + services (no main class)
+fitness-ai       — 13 files: LangChain4j chat, RAG, 5 Function Calling tools
 ```
 
 **Mapper interfaces in `fitness-common`** — all extend `BaseMapper<T>` from MyBatis-Plus, no XML needed.
@@ -48,16 +48,19 @@ fitness-ai       — 13 Java files: LangChain4j chat, RAG, 5 Function Calling to
 
 ## Database (MySQL 8.0, schema at `fitness-java/docs/schema.sql`)
 
-16 tables. Key ones:
+18 tables. Key ones:
 
 | Table | Purpose | Notes |
 |-------|---------|-------|
 | `user` | Shared across USER/COACH/ADMIN roles | Coach fields: bio, certifications, specialties, experience, hourly_rate |
-| `course` | Course catalog | coach_id FK, status enum (DRAFT/PENDING/APPROVED/REJECTED) |
+| `course` | Course catalog | coach_id FK, status: DRAFT/PENDING/APPROVED/REJECTED, rating/ratingCount |
+| `course_exercise` | Per-course video lessons | title, video_url (local path or URL), description, sort_order |
 | `user_course` | Course subscriptions | progress 0-100, unique(user_id, course_id) |
 | `training_record` | Training check-ins | duration, calories, notes per day |
-| `diet_record` | Meal logging | macro tracking (protein/carbs/fat) |
+| `diet_record` | Meal logging | meal_type (String, supports custom), food_id FK→food_item, weight_grams, macros |
 | `body_metrics` | Body measurements | weight, body_fat, bmi, waist, hip per date |
+| `food_item` | Food nutrition DB | ~200 preset Chinese foods + USDA cache, per-100g values |
+| `user_meal_type` | Custom meal types per user | name, code, sort_order, is_active (enable/disable per diet phase) |
 | `training_plan` | Coach-assigned plans | JSON content, date range |
 | `operation_log` | Audit trail | user, action, target, detail, IP |
 | `member_card` | Membership card products | duration_days, price, status (soft-delete via status=0) |
@@ -68,14 +71,14 @@ fitness-ai       — 13 Java files: LangChain4j chat, RAG, 5 Function Calling to
 | `sys_permission` | RBAC permissions | 10 seeds grouped by module (user/course/coach/settings) |
 | `sys_role_permission` | Role-permission mapping | Unique(role_id, permission_id) |
 
-**Existing DB upgrade note:** `user` table was extended with 5 coach columns. If DB already exists, run:
+**Seed data files:** `docs/seed-courses.sql` (10 courses × 6 exercises from free-exercise-db), `docs/seed-foods.sql` (~200 Chinese common foods with per-100g nutrition).
+
+**Existing DB upgrade:** If extending an older schema, also run:
 ```sql
-ALTER TABLE `user`
-  ADD COLUMN `bio` VARCHAR(500),
-  ADD COLUMN `certifications` VARCHAR(500),
-  ADD COLUMN `specialties` VARCHAR(300),
-  ADD COLUMN `experience` INT,
-  ADD COLUMN `hourly_rate` DECIMAL(10,2);
+ALTER TABLE `diet_record`
+  ADD COLUMN `food_id`      BIGINT,
+  ADD COLUMN `weight_grams` DECIMAL(7,1);
+ALTER TABLE `diet_record` MODIFY COLUMN `meal_type` VARCHAR(50) NOT NULL;
 ```
 
 ## Admin Panel Menu Structure
@@ -91,24 +94,47 @@ ALTER TABLE `user`
 系统设置    /settings/staff, /settings/roles, /settings/logs
 ```
 
-3 finance routes use `Placeholder.vue` (no payment system yet). All other 14 routes are fully implemented with backend APIs.
+3 finance routes use `Placeholder.vue`. All other 14 routes are fully implemented.
+
+## User API Endpoints (under `/api`, require auth)
+
+| Endpoint | Controller | Methods |
+|----------|-----------|---------|
+| `/auth/**` | AuthController | POST login/register/refresh/logout |
+| `/courses` | CourseController | GET list, GET/:id, POST/:id/subscribe, GET/my |
+| `/training/records` | TrainingController | POST, GET (date range + pagination) |
+| `/diet/records` | DietController | POST, GET (by date), PUT/:id, DELETE/:id |
+| `/diet/foods` | FoodController | GET/search?keyword=, GET/:id, POST/custom |
+| `/diet/meal-types` | UserMealTypeController | GET, POST, PUT/:id, DELETE/:id |
+| `/metrics` | BodyMetricsController | POST, GET (date range), GET/latest |
+| `/user/profile` | UserController | GET, PUT |
+| `/coach/**` | CoachController | COACH role required |
+| `/ai/chat` | AiChatController | GET (SSE streaming) |
+
+### Diet Module Architecture
+
+**Smart + manual dual-mode entry.** Users can search foods from a local 200-item database (supplemented by USDA FoodData Central API if `USDA_API_KEY` is set), select a food → enter weight in grams → backend auto-calculates calories and macros (`food_item.per_100g / 100 * weight_grams`). Quick manual entry still available as fallback.
+
+**Custom meal types.** `DietRecord.mealType` is a plain String (not enum), allowing per-user custom meal types via `user_meal_type` table. Default types: BREAKFAST/LUNCH/DINNER/SNACK. Users can add/disable/delete custom types (e.g., bulk phase adds extra meals, cut phase disables them).
+
+**USDA client.** `UsdaClient` is a thin RestTemplate wrapper. API key optional — when absent, only local DB is searched. USDA results are auto-cached to `food_item` table.
 
 ## Admin API Endpoints (all under `/api/admin`, require ADMIN role)
 
 | Endpoint | Controller | Methods |
 |----------|-----------|---------|
 | `/dashboard` | DashboardController | GET |
-| `/users` | AdminUserController | GET (list+keyword+role+status filter), POST (create), PUT (role/status) |
+| `/users` | AdminUserController | GET (list+keyword+role+status), POST, PUT (role/status) |
 | `/coaches` | AdminCoachController | GET (list+keyword), PUT (profile fields) |
 | `/courses` | AdminCourseController | GET (list+status filter), PUT (approve/reject) |
-| `/group-classes` | AdminGroupClassController | GET (list+status, excludes CANCELLED by default), POST, PUT, PUT/cancel |
+| `/group-classes` | AdminGroupClassController | GET (list, excludes CANCELLED), POST, PUT, PUT/cancel |
 | `/bookings` | AdminBookingController | GET (list) |
-| `/coach-students` | AdminCoachStudentController | GET (list+coachId+studentId+status), POST, PUT/end |
-| `/shifts` | AdminCoachShiftController | GET (?coachId), POST (batch save, deletes old then inserts) |
-| `/cards` | AdminMemberCardController | GET (list, status=1 only), POST, PUT, DELETE (soft: status=0) |
+| `/coach-students` | AdminCoachStudentController | GET (list+filters), POST, PUT/end |
+| `/shifts` | AdminCoachShiftController | GET (?coachId), POST (batch save) |
+| `/cards` | AdminMemberCardController | GET (status=1), POST, PUT, DELETE (soft: status=0) |
 | `/metrics` | AdminMetricsController | GET (list+userId filter) |
 | `/logs` | AdminLogController | GET (list+keyword search) |
-| `/roles` | AdminRoleController | GET (list), GET/permissions, GET/{id}/permissions, PUT/{id}/permissions |
+| `/roles` | AdminRoleController | GET list, GET permissions, GET/:id/permissions, PUT/:id/permissions |
 | `/coach-performance` | CoachPerformanceController | GET (aggregated stats per coach) |
 
 **Role filtering:** `/users` supports comma-separated roles, e.g. `?role=ADMIN,COACH`.
@@ -128,7 +154,7 @@ ALTER TABLE `user`
 ## AI Module (`fitness-ai`)
 
 - **LangChain4j 1.0.0-beta1** OpenAI-compatible mode → DeepSeek (`deepseek-chat`) for chat, DashScope (`text-embedding-v3`) for embeddings
-- **RAG:** `EmbeddingService` + `PineconeStoreService` (MVP: in-memory cosine similarity)
+- **RAG:** `EmbeddingService` + `PineconeStoreService`
 - **5 `@Tool` functions:** TrainingTool, BodyMetricsTool, DietTool, CourseTool, PlanTool — each queries MySQL via Mapper
 - **SSE streaming:** `GET /api/ai/chat?message=&sessionId=` → `Flux<String>` with `TEXT_EVENT_STREAM_VALUE`
 - **Chat history:** MongoDB `chat_history` collection (userId, sessionId, messages[])
@@ -139,13 +165,17 @@ ALTER TABLE `user`
 
 **DTOs:** `fitness-common`: `dto/request/`, `dto/response/`. `ApiResponse<T>` universal wrapper (`code, message, data`); `PageResult<T>` for pagination (`total, page, size, records`).
 
-**Enums:** Implement `IEnum<String>` with `@EnumValue`. Config: `mybatis-plus.type-enums-package: com.fitness.enums`.
+**Enums:** Implement `IEnum<String>` with `@EnumValue`. Config: `mybatis-plus.type-enums-package: com.fitness.enums`. Exception: `DietRecord.mealType` uses plain String for custom meal type support.
 
 **Pagination:** Controllers accept `page` (default 1), `size` (default 10). Services use MyBatis-Plus `Page<T>`. Response via `PageResult.of(total, page, size, records)`.
 
 **Soft-delete pattern:** MemberCard and GroupClass use status-based deletion (set status=0/CANCELLED). List queries filter these out by default.
 
 **Coach-shift batch save:** Delete all existing shifts for a coach, then insert new ones (transactional).
+
+**Ownership checks:** Diet and other user-data endpoints verify `userId` matches the authenticated user before update/delete, throwing `BusinessException` with appropriate ErrorCode.
+
+**Auto-calculation:** `DietServiceImpl.autoCalculate()` — when `foodId` + `weightGrams` is provided, macros are computed: `food_item.per_100g / 100 * weight_grams`. When `foodId` is null, manual values are used as-is.
 
 ## Frontend Conventions
 
@@ -154,10 +184,11 @@ ALTER TABLE `user`
 **Web app directory layout:**
 ```
 src/
-  api/        — per-module API wrappers (auth.js, course.js, training.js, etc.)
+  api/        — per-module API wrappers (auth.js, course.js, training.js, diet.js, metrics.js, ai.js)
   stores/     — Pinia stores (user.js for auth state, localStorage-persisted)
   utils/      — request.js (Axios instance with token injection + refresh interceptor)
   router/     — Vue Router with auth/guest/role guards
+  layouts/    — UserLayout.vue (top nav + <router-view>)
   views/      — 12 .vue pages
 ```
 
@@ -187,3 +218,5 @@ src/
 - **Pinia stores** cannot be called in axios interceptors (outside setup context). Read/write `localStorage` directly in `utils/request.js`.
 - **Circular dependency:** `stores/user.js` must import `request` from `@/utils/request`, NOT from `@/api/auth`.
 - **Separate auth keys:** Admin uses `admin_token`/`admin_user`, web uses `accessToken`/`refreshToken`/`user` in localStorage.
+- **DietRecord.mealType** is String, not MealType enum — changed to support custom meal types. Validation is `@NotBlank` instead of `@NotNull`.
+- **Spring placeholders** with env var defaults must use `${VAR:}` syntax (colon provides empty default). Without it Spring throws `PlaceholderResolutionException` on startup.

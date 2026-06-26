@@ -11,6 +11,9 @@ import com.fitness.enums.CourseStatus;
 import com.fitness.enums.DifficultyLevel;
 import com.fitness.exception.BusinessException;
 import com.fitness.exception.ErrorCode;
+import com.fitness.dto.response.CourseVO.CourseExerciseVO;
+import com.fitness.entity.CourseExercise;
+import com.fitness.mapper.CourseExerciseMapper;
 import com.fitness.mapper.CourseMapper;
 import com.fitness.mapper.UserCourseMapper;
 import com.fitness.mapper.UserMapper;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class CourseServiceImpl implements CourseService {
@@ -33,6 +37,9 @@ public class CourseServiceImpl implements CourseService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private CourseExerciseMapper courseExerciseMapper;
 
     @Override
     public Page<CourseVO> listCourses(int page, int size, String keyword,
@@ -60,7 +67,23 @@ public class CourseServiceImpl implements CourseService {
         if (course == null) {
             throw new BusinessException(ErrorCode.COURSE_NOT_FOUND);
         }
-        return toVO(course);
+        CourseVO vo = toVO(course);
+
+        List<CourseExercise> exercises = courseExerciseMapper.selectList(
+                new LambdaQueryWrapper<CourseExercise>()
+                        .eq(CourseExercise::getCourseId, id)
+                        .orderByAsc(CourseExercise::getSortOrder));
+        vo.setExercises(exercises.stream().map(e -> {
+            CourseExerciseVO evo = new CourseExerciseVO();
+            evo.setId(e.getId());
+            evo.setTitle(e.getTitle());
+            evo.setVideoUrl(e.getVideoUrl());
+            evo.setDescription(e.getDescription());
+            evo.setSortOrder(e.getSortOrder());
+            return evo;
+        }).toList());
+
+        return vo;
     }
 
     @Override
@@ -115,6 +138,8 @@ public class CourseServiceImpl implements CourseService {
         vo.setDuration(course.getDuration());
         vo.setPrice(course.getPrice());
         vo.setStatus(course.getStatus() != null ? course.getStatus().getDesc() : null);
+        vo.setRating(course.getRating());
+        vo.setRatingCount(course.getRatingCount());
         vo.setCreateTime(course.getCreateTime());
 
         // coach name

@@ -9,7 +9,8 @@ public enum CourseCategory implements IEnum<String> {
     FAT_LOSS("FAT_LOSS", "减脂"),
     YOGA("YOGA", "瑜伽"),
     CARDIO("CARDIO", "有氧"),
-    STRETCHING("STRETCHING", "拉伸");
+    STRETCHING("STRETCHING", "拉伸"),
+    POSTURE("POSTURE", "形体纠正");
 
     private final String value;
     private final String desc;

@@ -22,4 +22,6 @@ public class Course extends BaseEntity {
     private Integer duration;
     private BigDecimal price;
     private CourseStatus status;
+    private BigDecimal rating;
+    private Integer ratingCount;
 }
