@@ -1,20 +1,10 @@
 <template>
   <div class="user-layout">
-    <!-- Top bar (red) -->
-    <div class="top-bar">
-      <div class="top-bar-inner">
-        <span class="top-bar-item">📞 400-888-0000</span>
-        <span class="top-bar-item">✉️ contact@fitness.com</span>
-        <span class="top-bar-right">每天运动一小时，健康生活一辈子</span>
-      </div>
-    </div>
-
-    <!-- Main nav (black) -->
+    <!-- Main nav (minimal white) -->
     <header class="main-nav" :class="{ 'nav-scrolled': scrolled }">
       <div class="nav-inner">
         <span class="nav-logo" @click="$router.push('/')">
-          <span class="logo-icon">🏋️</span>
-          <span class="logo-text">FITNESS</span>
+          FITNESS
         </span>
 
         <nav class="nav-menu">
@@ -23,7 +13,6 @@
           <router-link to="/training" class="nav-link" :class="{ active: isActive('/training') }">训练</router-link>
           <router-link to="/diet" class="nav-link" :class="{ active: isActive('/diet') }">饮食</router-link>
           <router-link to="/metrics" class="nav-link" :class="{ active: isActive('/metrics') }">身体</router-link>
-
         </nav>
 
         <div class="nav-user">
@@ -176,37 +165,21 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
-/* ---- Top Bar ---- */
-.top-bar {
-  height: 36px;
-  background: var(--color-brand);
-  color: #FFFFFF;
-  font-size: 12px;
-}
-.top-bar-inner {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 var(--page-padding-x);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.top-bar-item { opacity: 0.9; }
-.top-bar-right { margin-left: auto; opacity: 0.85; }
-
-/* ---- Main Nav ---- */
+/* ---- Main Nav (black transparent) ---- */
 .main-nav {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: var(--nav-height);
-  background: var(--color-bg-dark);
-  transition: background var(--transition-normal);
+  height: 60px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background var(--transition-normal), box-shadow var(--transition-normal);
 }
 .nav-scrolled {
-  background: rgba(10, 10, 10, 0.96);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.88);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
 }
 .nav-inner {
   max-width: var(--max-width);
@@ -215,58 +188,66 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   align-items: center;
-  gap: var(--space-xl);
 }
 
 /* Logo */
 .nav-logo {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.logo-icon { font-size: 24px; line-height: 1; }
-.logo-text {
-  font-size: 20px;
-  font-weight: var(--font-weight-bold);
+  font-size: 18px;
+  font-weight: 700;
   color: #FFFFFF;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+  margin-right: var(--space-xl);
 }
 
-/* Nav links */
+/* Nav links (centered) */
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
+  justify-content: center;
 }
 .nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 20px;
   font-size: var(--font-body);
   font-weight: var(--font-weight-medium);
-  color: #CCCCCC;
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
-  border-radius: var(--radius-sm);
   transition: color var(--transition-fast);
   white-space: nowrap;
 }
-.nav-link:hover { color: var(--color-brand); }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--color-brand);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+.nav-link:hover { color: #FFFFFF; }
+.nav-link:hover::after { width: calc(100% - 40px); }
 .nav-link.active { color: var(--color-brand); }
+.nav-link.active::after { width: calc(100% - 40px); }
 
 /* User area */
-.nav-user { flex-shrink: 0; }
+.nav-user { flex-shrink: 0; margin-left: var(--space-xl); }
 .user-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #CCCCCC;
+  color: rgba(255, 255, 255, 0.75);
   padding: 4px 8px;
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 .user-trigger:hover { color: #FFFFFF; }
 .user-avatar { flex-shrink: 0; }
@@ -399,14 +380,11 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
-  .top-bar { display: none; }
   .nav-menu { display: none; }
   .nav-inner { justify-content: space-between; }
   .layout-main { padding-bottom: calc(var(--space-lg) + var(--tabbar-height)); }
   .mobile-tabbar { display: flex; }
   .site-footer { display: none; }
   .back-to-top { bottom: calc(var(--tabbar-height) + 16px); }
-
-  .footer-inner { grid-template-columns: 1fr; }
 }
 </style>

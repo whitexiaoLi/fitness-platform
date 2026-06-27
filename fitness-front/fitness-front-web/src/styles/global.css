@@ -97,6 +97,13 @@
   box-shadow: var(--shadow-card-hover);
 }
 
+@media (hover: hover) {
+  .stat-card:hover {
+    transform: perspective(600px) rotateX(2deg) rotateY(-2deg) translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  }
+}
+
 .stat-value {
   font-size: 28px;
   font-weight: var(--font-weight-bold);
@@ -248,4 +255,85 @@
 .back-to-top:hover {
   background: var(--color-brand-hover);
   transform: translateY(-2px);
+}
+
+/* ---- Scroll Fade (progressive) ---- */
+.scroll-fade {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.scroll-fade.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- Scroll Reveal ---- */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+}
+.reveal-item.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-item.reveal-left {
+  transform: translateX(-24px);
+}
+.reveal-item.reveal-left.revealed {
+  transform: translateX(0);
+}
+.reveal-item.reveal-scale {
+  transform: scale(0.92);
+}
+.reveal-item.reveal-scale.revealed {
+  transform: scale(1);
+}
+
+/* ---- Card Tilt (desktop only) ---- */
+@media (hover: hover) {
+  .tilt-card {
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  }
+  .tilt-card:hover {
+    transform: perspective(800px) rotateX(1.5deg) rotateY(-1.5deg) translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ---- Hero Glow Animation ---- */
+@keyframes hero-glow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.hero-glow {
+  background: linear-gradient(135deg, #0A0A0A 0%, #1A0A0A 30%, #0A0A0A 50%, #1A0A0A 70%, #0A0A0A 100%);
+  background-size: 400% 400%;
+  animation: hero-glow 8s ease-in-out infinite;
+}
+
+/* ---- Skeleton Loading ---- */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+.skeleton-card {
+  height: 200px;
+  border-radius: var(--radius-md);
+}
+.skeleton-row {
+  height: 40px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-md);
+}
+.skeleton-stat {
+  height: 100px;
+  border-radius: var(--radius-md);
 }
