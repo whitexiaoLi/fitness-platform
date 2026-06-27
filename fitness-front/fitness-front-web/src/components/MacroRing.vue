@@ -15,7 +15,7 @@
       />
     </svg>
     <div class="ring-center">
-      <span class="ring-value" ref="valueRef">{{ displayValue }}</span>
+      <span class="ring-value">{{ displayValue }}</span>
       <span class="ring-unit">{{ unit }}</span>
       <span class="ring-label">{{ label }}</span>
     </div>
@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 
 const props = defineProps({
   value: { type: Number, default: 0 },
@@ -34,34 +34,36 @@ const props = defineProps({
   decimals: { type: Number, default: 0 },
 })
 
-const circumference = 2 * Math.PI * 42 // ≈ 263.89
+const circumference = 2 * Math.PI * 42
 const dashOffset = computed(() => {
   const pct = Math.min(props.value / props.max, 1)
   return circumference * (1 - pct)
 })
 
-const valueRef = ref(null)
 const displayValue = ref('0')
 
 function format(v) {
   return props.decimals > 0 ? v.toFixed(props.decimals) : String(Math.round(v))
 }
 
-onMounted(() => {
-  const target = props.value
+function animateTo(target) {
   if (target === 0) { displayValue.value = format(0); return }
+  const startVal = Number(displayValue.value) || 0
   const duration = 500
-  const start = performance.now()
+  const startTime = performance.now()
   function step(now) {
-    const elapsed = now - start
+    const elapsed = now - startTime
     const progress = Math.min(elapsed / duration, 1)
     const eased = 1 - (1 - progress) * (1 - progress)
-    displayValue.value = format(target * eased)
+    displayValue.value = format(startVal + (target - startVal) * eased)
     if (progress < 1) requestAnimationFrame(step)
     else displayValue.value = format(target)
   }
   requestAnimationFrame(step)
-})
+}
+
+onMounted(() => animateTo(props.value))
+watch(() => props.value, (v) => animateTo(v))
 </script>
 
 <style scoped>

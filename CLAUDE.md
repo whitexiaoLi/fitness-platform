@@ -183,21 +183,54 @@ ALTER TABLE `diet_record` MODIFY COLUMN `meal_type` VARCHAR(50) NOT NULL;
 - `variables.css` — CSS custom properties (brand red #D93831, spacing 8px grid, typography, shadows, transitions) + Element Plus theme override
 - `reset.css` — base reset
 - `transitions.css` — page fade, dialog scale, skeleton loading, count-up animation
-- `global.css` — `.page-title` (red `//` slash prefix), `.section-title`, `.stat-card`, `.btn-primary`
+- `global.css` — `.section-title`, `.section-subtitle`, `.stat-card`, `.scroll-fade`, `.reveal-item`, `.btn-primary`
 
 **Web app layout:**
 ```
 src/
   api/        — per-module wrappers (auth, course, training, diet, metrics)
-  components/ — MacroRing.vue, TrendSparkline.vue
-  composables/— useCountUp.js
+  components/ — MacroRing.vue (SVG ring w/ count-up), TrendSparkline.vue (SVG mini chart)
+  composables/— useCountUp.js, useTilt3D.js, useScrollReveal.js
   stores/     — user.js (Pinia, localStorage-persisted)
   utils/      — request.js (Axios with Bearer token + refresh interceptor)
   router/     — Vue Router with auth/guest/role guards
-  layouts/    — UserLayout.vue (black nav + red highlights + footer + mobile TabBar)
+  layouts/    — UserLayout.vue (black transparent nav + footer + mobile TabBar)
   views/      — 12 .vue pages + WorkoutSession.vue
   styles/     — Global CSS design system
 ```
+
+### Navigation
+
+**Black transparent with frosted glass.** `UserLayout.vue .main-nav` uses `background: rgba(0,0,0,0.75)` + `backdrop-filter: blur(12px)`. On scroll, deepens to `rgba(0,0,0,0.88)`. Logo and links are white; active link uses brand red. No red top border. Mobile TabBar remains white.
+
+### Global Scroll Animations
+
+Three animation classes driven by `main.js`:
+
+| Class | Trigger | Behavior |
+|-------|---------|----------|
+| `scroll-fade` | requestAnimationFrame scroll handler | Progressive opacity + translateY, `.visible` class at completion. Used for cards. |
+| `reveal-item` | IntersectionObserver (`.revealed` class) | Binary reveal on enter viewport. Used for section titles. Supports `.reveal-left` and `.reveal-scale` variants. |
+| `course-stagger` | Same RAF as scroll-fade | Same behavior, `data-stagger-delay` for per-card offset. |
+
+### Page Design Patterns
+
+All redesigned pages (Home, CourseList, Training, Diet, BodyMetrics) follow a consistent pattern:
+
+1. **Layout offset** — root element gets negative margin to cancel `.layout-main` padding: `margin: calc(-1 * var(--space-lg)) calc(-1 * var(--page-padding-x)) calc(-1 * var(--space-2xl))`
+2. **Hero Banner** — full-width breakout (`left:50%; margin-left:-50vw; width:100vw`), background image + `rgba(0,0,0,0.75)` overlay + `background-attachment: fixed` parallax, centered white title
+3. **Content area** — `max-width: var(--max-width); margin: 0 auto` with horizontal padding
+4. **Cards** — white `background`, 12px `border-radius`, subtle `box-shadow`, hover lift 6px
+
+**`section-dark` class** (Home.vue only) — shared dark background for Features/Courses/Coaches sections. Includes `::before` overlay, `> * { z-index: 1 }`, and white text overrides for `.section-title`/`.section-subtitle`.
+
+### Course Cover Fallback
+
+`courseCover(c)` function (exists in both `Home.vue` and `CourseList.vue` — duplicated):
+- Returns `c.coverUrl` if present in DB
+- Falls back to `exactCovers` map (11 course titles → specific images)
+- Then keyword matching (瑜伽→yoga, 跑步→cardio, 力量→strength, etc.)
+- Finally a generic fitness image from `coverMap`
 
 **Admin app layout:**
 ```
@@ -230,3 +263,7 @@ src/
 - **el-upload** doesn't use Axios — needs Vite proxy or full URL for action. Also needs `Authorization` header set manually via `:headers`.
 - **el-popconfirm** wraps content in a block element, which can break inline button layouts — wrap action buttons in a flex container (`.action-cell { display:flex }`).
 - **Static file serving** needs both `WebConfig.addResourceHandlers` AND `WebSecurityConfig` permitAll for the path.
+- **MacroRing.vue** watches `props.value` changes and re-animates — not just onMount. Without the `watch`, async-loaded data shows stale zero.
+- **DietController.listByDate** returns `ApiResponse<Map<String, Object>>` (NOT PageResult). The Map contains keys: `records`, `totalCalories`, `totalProtein`, `totalCarbs`, `totalFat`.
+- **`el-input-number` width** — inline `style="width:60px"` is often overridden by Element Plus internal styles. Use `:deep(.el-input-number) { width: 65px !important; }` in scoped CSS when precise sizing is needed.
+- **`el-input-number .el-input__wrapper`** internal padding can cause content truncation for 3-digit values — reduce padding with `:deep(.el-input__wrapper) { padding: 0 5px; }`.
