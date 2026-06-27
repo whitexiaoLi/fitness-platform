@@ -1,0 +1,91 @@
+/* ========================================
+   Fitness Front Web — Page Transitions
+   ======================================== */
+
+/* Page fade */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+/* Dialog scale */
+.dialog-scale-enter-active {
+  transition: all 200ms var(--ease-out);
+}
+
+.dialog-scale-leave-active {
+  transition: all 150ms var(--ease-in);
+}
+
+.dialog-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.dialog-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* List stagger */
+.list-item-enter-active {
+  transition: all 300ms var(--ease-out);
+}
+
+.list-item-leave-active {
+  transition: all 200ms var(--ease-in);
+  position: absolute;
+}
+
+.list-item-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.list-item-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.list-item-move {
+  transition: transform 300ms var(--ease-out);
+}
+
+/* Fade only */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Skeleton loading */
+@keyframes skeleton-loading {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #F0F0F0 25%, #E4E4E4 50%, #F0F0F0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Count-up animation helper */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.count-up {
+  animation: count-up 400ms var(--ease-out) both;
+}

@@ -29,7 +29,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserVO updateProfile(Long userId, String nickname, String avatarUrl, String phone) {
+    public UserVO updateProfile(Long userId, String nickname, String avatarUrl, String phone, String height,
+                                 String bio, String certifications, String specialties, String experience, String hourlyRate) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
@@ -37,6 +38,12 @@ public class UserServiceImpl implements UserService {
         if (nickname != null) user.setNickname(nickname);
         if (avatarUrl != null) user.setAvatarUrl(avatarUrl);
         if (phone != null) user.setPhone(phone);
+        if (height != null && !height.isBlank()) user.setHeight(new java.math.BigDecimal(height));
+        if (bio != null) user.setBio(bio);
+        if (certifications != null) user.setCertifications(certifications);
+        if (specialties != null) user.setSpecialties(specialties);
+        if (experience != null && !experience.isBlank()) user.setExperience(Integer.valueOf(experience));
+        if (hourlyRate != null && !hourlyRate.isBlank()) user.setHourlyRate(new java.math.BigDecimal(hourlyRate));
         userMapper.updateById(user);
         return toVO(user);
     }
@@ -61,6 +68,12 @@ public class UserServiceImpl implements UserService {
         vo.setRole(user.getRole().getValue());
         vo.setStatus(user.getStatus());
         vo.setCreateTime(user.getCreateTime());
+        vo.setBio(user.getBio());
+        vo.setCertifications(user.getCertifications());
+        vo.setSpecialties(user.getSpecialties());
+        vo.setExperience(user.getExperience());
+        vo.setHourlyRate(user.getHourlyRate());
+        vo.setHeight(user.getHeight());
         return vo;
     }
 }

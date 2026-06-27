@@ -33,7 +33,15 @@ public enum ErrorCode {
 
     // 饮食相关 5xxx
     DIET_RECORD_NOT_FOUND(5001, "饮食记录不存在"),
-    DIET_RECORD_NOT_OWNER(5002, "无权操作该饮食记录");
+    DIET_RECORD_NOT_OWNER(5002, "无权操作该饮食记录"),
+
+    // 训练相关 6xxx
+    TRAINING_RECORD_NOT_FOUND(6001, "训练记录不存在"),
+    TRAINING_RECORD_NOT_OWNER(6002, "无权操作该训练记录"),
+
+    // 身体数据相关 7xxx
+    METRICS_NOT_FOUND(7001, "身体数据记录不存在"),
+    METRICS_NOT_OWNER(7002, "无权操作该身体数据记录");
 
     private final int code;
     private final String message;

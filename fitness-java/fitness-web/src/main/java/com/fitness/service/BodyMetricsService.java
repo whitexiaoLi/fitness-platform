@@ -8,4 +8,6 @@ public interface BodyMetricsService {
     BodyMetrics addRecord(Long userId, BodyMetrics record);
     List<BodyMetrics> listRecords(Long userId, LocalDate start, LocalDate end);
     BodyMetrics getLatest(Long userId);
+    BodyMetrics updateRecord(Long id, Long userId, BodyMetrics record);
+    void deleteRecord(Long id, Long userId);
 }

@@ -38,4 +38,20 @@ public class BodyMetricsController {
         Long userId = securityUser.getUser().getId();
         return ApiResponse.success(bodyMetricsService.getLatest(userId));
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<BodyMetrics> updateRecord(@AuthenticationPrincipal SecurityUser securityUser,
+                                                   @PathVariable Long id,
+                                                   @RequestBody BodyMetrics record) {
+        Long userId = securityUser.getUser().getId();
+        return ApiResponse.success(bodyMetricsService.updateRecord(id, userId, record));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteRecord(@AuthenticationPrincipal SecurityUser securityUser,
+                                           @PathVariable Long id) {
+        Long userId = securityUser.getUser().getId();
+        bodyMetricsService.deleteRecord(id, userId);
+        return ApiResponse.success();
+    }
 }

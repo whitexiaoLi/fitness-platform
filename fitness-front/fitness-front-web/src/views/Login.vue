@@ -57,7 +57,7 @@ async function handleLogin() {
 <style scoped>
 .login-container {
   display: flex; align-items: center; justify-content: center; min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%);
 }
 .login-card {
   width: 400px; padding: 40px;

@@ -28,7 +28,9 @@ public class UserController {
                                               @RequestBody Map<String, String> body) {
         Long userId = securityUser.getUser().getId();
         return ApiResponse.success(userService.updateProfile(userId,
-                body.get("nickname"), body.get("avatarUrl"), body.get("phone")));
+                body.get("nickname"), body.get("avatarUrl"), body.get("phone"), body.get("height"),
+                body.get("bio"), body.get("certifications"), body.get("specialties"),
+                body.get("experience"), body.get("hourlyRate")));
     }
 
     @PutMapping("/password")

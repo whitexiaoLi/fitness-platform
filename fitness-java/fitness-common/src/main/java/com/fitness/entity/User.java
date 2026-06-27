@@ -23,4 +23,5 @@ public class User extends BaseEntity {
     private String specialties;
     private Integer experience;
     private java.math.BigDecimal hourlyRate;
+    private java.math.BigDecimal height;
 }

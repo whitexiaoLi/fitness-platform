@@ -14,5 +14,7 @@ public class TrainingRecord extends BaseEntity {
     private Integer duration;
     private Integer calories;
     private String notes;
+    private String trainingType;
+    private String intensity;
     private LocalDate recordDate;
 }

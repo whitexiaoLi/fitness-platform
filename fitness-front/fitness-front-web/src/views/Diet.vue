@@ -1,22 +1,25 @@
 <template>
   <div class="diet">
-    <h2 class="page-title">🍎 饮食记录</h2>
+    <h2 class="page-title">饮食记录</h2>
 
     <!-- 统计卡片 -->
     <el-row :gutter="16" class="stats-row">
       <el-col :span="6" v-for="s in statCards" :key="s.label">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" :style="{ color: s.color }">{{ s.value }}<span class="stat-unit"> {{ s.unit }}</span></div>
-          <div class="stat-label">{{ s.label }}</div>
-          <el-progress
-            v-if="goals[s.goalKey]"
-            :percentage="s.percent"
-            :color="s.color"
-            :stroke-width="6"
-            :show-text="false"
-            style="margin-top:8px"
-          />
-          <div class="stat-sub" v-if="goals[s.goalKey]">目标 {{ goals[s.goalKey] }}{{ s.unit }}</div>
+          <div class="stat-card-inner">
+            <MacroRing
+              :value="s.rawValue"
+              :max="goals[s.goalKey] || s.rawValue * 2 || 100"
+              :label="s.label"
+              :unit="s.unit"
+              :color="s.color"
+              :decimals="s.decimals"
+            />
+            <div class="stat-goal" v-if="goals[s.goalKey]">
+              目标 {{ goals[s.goalKey] }}{{ s.unit }}
+            </div>
+            <div class="stat-goal" v-else style="visibility:hidden">-</div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -251,6 +254,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import MacroRing from '@/components/MacroRing.vue'
 import {
   addDietRecord, getDietRecords, updateDietRecord, deleteDietRecord,
   searchFoods, getMealTypes, createMealType, updateMealType, deleteMealType,
@@ -281,13 +285,13 @@ const summary = computed(() => ({
   fat: records.value.reduce((s, r) => s + Number(r.fat || 0), 0),
 }))
 const statCards = computed(() => [
-  { label: '总热量', value: summary.value.calories, unit: 'kcal', color: '#667eea', goalKey: 'calories',
+  { label: '总热量', value: summary.value.calories, rawValue: summary.value.calories, unit: 'kcal', color: '#667eea', goalKey: 'calories', decimals: 0,
     percent: goals.calories ? Math.min(100, Math.round(summary.value.calories / goals.calories * 100)) : 0 },
-  { label: '蛋白质', value: summary.value.protein.toFixed(1), unit: 'g', color: '#67c23a', goalKey: 'protein',
+  { label: '蛋白质', value: summary.value.protein.toFixed(1), rawValue: summary.value.protein, unit: 'g', color: '#67c23a', goalKey: 'protein', decimals: 1,
     percent: goals.protein ? Math.min(100, Math.round(summary.value.protein / goals.protein * 100)) : 0 },
-  { label: '碳水', value: summary.value.carbs.toFixed(1), unit: 'g', color: '#e6a23c', goalKey: 'carbs',
+  { label: '碳水', value: summary.value.carbs.toFixed(1), rawValue: summary.value.carbs, unit: 'g', color: '#e6a23c', goalKey: 'carbs', decimals: 1,
     percent: goals.carbs ? Math.min(100, Math.round(summary.value.carbs / goals.carbs * 100)) : 0 },
-  { label: '脂肪', value: summary.value.fat.toFixed(1), unit: 'g', color: '#f56c6c', goalKey: 'fat',
+  { label: '脂肪', value: summary.value.fat.toFixed(1), rawValue: summary.value.fat, unit: 'g', color: '#f56c6c', goalKey: 'fat', decimals: 1,
     percent: goals.fat ? Math.min(100, Math.round(summary.value.fat / goals.fat * 100)) : 0 },
 ])
 
@@ -497,22 +501,17 @@ async function handleDelete(item) {
 </script>
 
 <style scoped>
-.page-title { margin: 0 0 16px; font-size: 20px; }
-
-/* stat cards */
 .stats-row { margin-bottom: 16px; }
-.stat-card { text-align: center; }
-.stat-card :deep(.el-card__body) { padding: 20px; }
-.stat-value { font-size: 28px; font-weight: bold; }
-.stat-unit { font-size: 14px; font-weight: normal; }
-.stat-label { font-size: 13px; color: #999; margin-top: 4px; }
-.stat-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+.stat-card { text-align: center; padding: 0; }
+.stat-card :deep(.el-card__body) { padding: 16px 8px; }
+.stat-card-inner { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.stat-goal { font-size: 11px; color: var(--color-text-weak); }
 
 /* goal card */
 .goal-card { margin-bottom: 0; }
 .goal-card :deep(.el-card__body) { padding: 12px 20px; }
-.goal-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 500; color: #333; user-select: none; }
-.goal-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+.goal-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--color-text-title); user-select: none; }
+.goal-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-border-light); }
 
 /* main card */
 .card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -522,48 +521,48 @@ async function handleDelete(item) {
 /* food list */
 .food-item {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; margin-bottom: 4px; border-radius: 10px;
-  cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+  padding: 12px 14px; margin-bottom: 4px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all var(--transition-fast); border: 1px solid transparent;
 }
-.food-item:hover { background: #f5f7fa; border-color: #e4e7ed; }
+.food-item:hover { background: var(--color-bg-light); border-color: var(--color-border); }
 .food-left { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .food-name-row { display: flex; align-items: center; gap: 8px; }
-.food-name { font-size: 14px; font-weight: 500; }
-.food-meta { font-size: 12px; color: #999; }
-.del-btn { opacity: 0; transition: opacity 0.2s; }
+.food-name { font-size: 14px; font-weight: 500; color: var(--color-text-title); }
+.food-meta { font-size: 12px; color: var(--color-text-secondary); }
+.del-btn { opacity: 0; transition: opacity var(--transition-fast); }
 .food-item:hover .del-btn { opacity: 1; }
 
 /* food search dialog */
 .search-box { margin-bottom: 12px; }
 .quick-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .quick-tag {
-  padding: 4px 12px; background: #f0f2f5; border-radius: 16px; font-size: 13px;
-  color: #666; cursor: pointer; transition: all 0.2s;
+  padding: 4px 14px; background: var(--color-bg-light); border-radius: 16px; font-size: 13px;
+  color: var(--color-text-secondary); cursor: pointer; transition: all var(--transition-fast);
 }
-.quick-tag:hover { background: #667eea; color: #fff; }
+.quick-tag:hover { background: var(--color-brand); color: #fff; }
 
 .food-result-item {
-  padding: 12px; border-radius: 10px; cursor: pointer; margin-bottom: 4px;
-  transition: all 0.2s; border: 1px solid transparent;
+  padding: 12px; border-radius: var(--radius-md); cursor: pointer; margin-bottom: 4px;
+  transition: all var(--transition-fast); border: 1px solid transparent;
 }
-.food-result-item:hover { background: #f5f7fa; }
-.food-result-item.selected { background: #ecf5ff; border-color: #667eea; }
+.food-result-item:hover { background: var(--color-bg-light); }
+.food-result-item.selected { background: var(--color-brand-light); border-color: var(--color-brand); }
 .result-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .result-name { font-weight: 500; }
-.result-nutrition { display: flex; gap: 12px; font-size: 12px; color: #999; flex-wrap: wrap; }
-.per100 { color: #bbb; }
+.result-nutrition { display: flex; gap: 12px; font-size: 12px; color: var(--color-text-secondary); flex-wrap: wrap; }
+.per100 { color: var(--color-text-weak); }
 
 .weight-section { margin-top: 4px; }
-.selected-food-label { font-size: 15px; font-weight: 500; color: #333; margin-bottom: 12px; }
+.selected-food-label { font-size: 15px; font-weight: 500; color: var(--color-text-title); margin-bottom: 12px; }
 
 .macro-preview { display: flex; gap: 16px; flex-wrap: wrap; }
-.preview-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 16px; background: #f5f7fa; border-radius: 8px; min-width: 90px; }
-.preview-label { font-size: 12px; color: #999; }
+.preview-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 16px; background: var(--color-bg-light); border-radius: var(--radius-md); min-width: 90px; }
+.preview-label { font-size: 12px; color: var(--color-text-secondary); }
 .preview-value { font-size: 16px; font-weight: 600; }
 
 /* meal type management */
 .meal-type-list { margin-bottom: 16px; }
-.meal-type-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+.meal-type-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--color-border-light); }
 .meal-type-name { flex: 1; font-size: 14px; font-weight: 500; }
 .add-meal-type { display: flex; align-items: center; gap: 8px; }
 </style>

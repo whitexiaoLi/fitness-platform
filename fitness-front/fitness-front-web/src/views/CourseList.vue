@@ -1,6 +1,6 @@
 <template>
   <div class="course-list">
-    <h2 class="page-title">📚 课程中心</h2>
+    <h2 class="page-title">课程中心</h2>
 
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" size="default">
@@ -26,24 +26,24 @@
 
     <el-row :gutter="20" class="course-grid" v-loading="loading">
       <el-col :span="8" v-for="course in courses" :key="course.id">
-        <el-card shadow="hover" class="course-card" @click="$router.push(`/courses/${course.id}`)">
+        <div class="course-card" @click="$router.push(`/courses/${course.id}`)">
           <div class="cover">
             <img v-if="course.coverUrl" :src="course.coverUrl" alt="" />
             <div v-else class="cover-placeholder">📹</div>
+            <div class="cover-overlay">
+              <span class="cover-diff" :class="'diff-' + course.difficulty">{{ diffLabel(course.difficulty) }}</span>
+            </div>
           </div>
           <div class="card-body">
+            <span class="card-category">{{ catLabel(course.category) }}</span>
             <h4 class="title">{{ course.title }}</h4>
-            <div class="tags">
-              <el-tag size="small" type="info">{{ catLabel(course.category) }}</el-tag>
-              <el-tag size="small" :type="diffTag(course.difficulty)">{{ diffLabel(course.difficulty) }}</el-tag>
-            </div>
             <div class="meta">
               <span>{{ course.duration || 0 }} 分钟</span>
               <el-rate :model-value="course.rating || 0" disabled show-score text-color="#f56c6c" size="small" />
               <span class="price">¥{{ course.price || 0 }}</span>
             </div>
           </div>
-        </el-card>
+        </div>
       </el-col>
     </el-row>
 
@@ -102,20 +102,66 @@ function handleReset() { filters.keyword = ''; filters.category = ''; filters.di
 </script>
 
 <style scoped>
-.page-title { margin: 0 0 16px; font-size: 20px; }
-.filter-card { margin-bottom: 20px; }
-.filter-card :deep(.el-card__body) { padding: 16px 20px 0; }
 .course-grid { min-height: 200px; }
-.course-card { cursor: pointer; border-radius: 12px; overflow: hidden; transition: transform 0.2s; margin-bottom: 20px; }
-.course-card:hover { transform: translateY(-4px); }
-.course-card :deep(.el-card__body) { padding: 0; }
-.cover { height: 160px; overflow: hidden; background: #f0f2f5; }
-.cover img { width: 100%; height: 100%; object-fit: cover; }
-.cover-placeholder { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; }
-.card-body { padding: 16px; }
-.title { margin: 0 0 10px; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tags { display: flex; gap: 8px; margin-bottom: 12px; }
-.meta { display: flex; justify-content: space-between; font-size: 13px; color: #999; }
-.price { color: #f56c6c; font-weight: 600; font-size: 15px; }
+.course-card {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  margin-bottom: 20px;
+  border: 1px solid var(--color-border);
+}
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+.cover {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+  background: var(--color-bg-dark);
+}
+.cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease-out);
+}
+.course-card:hover .cover img { transform: scale(1.06); }
+.cover-placeholder { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: rgba(255,255,255,0.3); }
+
+/* Difficulty badge — weight plate style */
+.cover-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 5px 14px;
+  background: rgba(10,10,10,0.8);
+  border-radius: 0 0 0 var(--radius-md);
+  backdrop-filter: blur(4px);
+}
+.cover-diff {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.diff-BEGINNER    { color: #52C41A; }
+.diff-INTERMEDIATE { color: #FAAD14; }
+.diff-ADVANCED     { color: #FF4D4F; }
+
+.card-body { padding: var(--space-md); }
+.card-category {
+  font-size: 11px;
+  color: var(--color-brand);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  display: block;
+}
+.title { margin: 0 0 10px; font-size: 16px; font-weight: 600; color: var(--color-text-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--color-text-secondary); }
+.price { color: var(--color-brand); font-weight: 700; font-size: 15px; }
 .pagination-wrap { margin-top: 8px; display: flex; justify-content: center; }
 </style>

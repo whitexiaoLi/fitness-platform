@@ -95,10 +95,26 @@ CREATE TABLE IF NOT EXISTS `training_record` (
     `duration`    INT         COMMENT 'minutes',
     `calories`    INT,
     `notes`       VARCHAR(500),
+    `training_type` VARCHAR(50) COMMENT 'training type: 胸部/背部/腿部/...',
+    `intensity`   VARCHAR(20) COMMENT 'EASY/MEDIUM/HARD',
     `record_date` DATE        NOT NULL,
     `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_user_date (`user_id`, `record_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Workout plans (user training templates)
+-- ============================================
+CREATE TABLE IF NOT EXISTS `workout_plan` (
+    `id`            BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    `user_id`       BIGINT       NOT NULL,
+    `name`          VARCHAR(100) NOT NULL,
+    `training_type` VARCHAR(50),
+    `exercises`     JSON         COMMENT '[{exerciseId, title, sets, restSeconds}]',
+    `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================

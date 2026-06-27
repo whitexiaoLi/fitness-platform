@@ -64,11 +64,6 @@
             <artifactId>fitness-admin</artifactId>
         </dependency>
 
-        <!-- AI Module -->
-        <dependency>
-            <groupId>com.fitness</groupId>
-            <artifactId>fitness-ai</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

@@ -23,7 +23,6 @@
         <module>fitness-common</module>
         <module>fitness-web</module>
         <module>fitness-admin</module>
-        <module>fitness-ai</module>
     </modules>
 
     <properties>
@@ -35,7 +34,6 @@
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
         <mysql-connector.version>9.4.0</mysql-connector.version>
-        <langchain4j.version>1.0.0-beta1</langchain4j.version>
     </properties>
 
     <dependencyManagement>
@@ -51,12 +49,6 @@
                 <artifactId>fitness-admin</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.fitness</groupId>
-                <artifactId>fitness-ai</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
                 <!-- MyBatis-Plus -->
             <dependency>
                 <groupId>com.baomidou</groupId>
@@ -96,22 +88,6 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- LangChain4j -->
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-spring-boot-starter</artifactId>
-                <version>${langchain4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-open-ai</artifactId>
-                <version>${langchain4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-pinecone</artifactId>
-                <version>${langchain4j.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
