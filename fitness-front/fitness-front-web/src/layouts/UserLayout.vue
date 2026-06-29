@@ -112,11 +112,12 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ArrowDown, ArrowUp, User, DataAnalysis, SwitchButton, HomeFilled, Reading, DishDot, TrendCharts, UserFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 const scrolled = ref(false)
@@ -128,8 +129,9 @@ function isActive(path) {
   return route.path.startsWith(path)
 }
 
-function handleLogout() {
-  userStore.logout()
+async function handleLogout() {
+  await userStore.logout()
+  router.push('/login')
 }
 
 function scrollToTop() {

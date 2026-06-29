@@ -28,7 +28,8 @@ export const useUserStore = defineStore('user', () => {
     return await request.post('/auth/register', data)
   }
 
-  function logout() {
+  async function logout() {
+    try { await request.post('/auth/logout') } catch {}
     user.value = null
     accessToken.value = ''
     refreshToken.value = ''
